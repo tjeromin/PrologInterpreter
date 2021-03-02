@@ -1,10 +1,14 @@
 import Type
 
+-- Prints a data type pretty 
 class Pretty a where
   pretty :: a -> String
 
+-- Instance for pretty printing a term
 instance Pretty Term where
-  pretty t = prettyTerm t 0 0 where 
+  pretty t = prettyTerm t 0 0 where
+    -- Pretty print a term.
+    -- Term -> Depth of brackets -> Index of current term -> Pretty String 
     prettyTerm :: Term -> Int -> Int -> String
     prettyTerm (Var (VarName name)) _ _ = name
     prettyTerm (Comb "." [Var (VarName name)]) d i = ".(" ++ name ++ ")"
@@ -21,6 +25,8 @@ instance Pretty Term where
     prettyTerm (Comb name []) _ _ = name 
     prettyTerm (Comb name ts) d i = name ++ "(" ++ comb ts d i ++ ")"
 
+    -- Prints a list
+    -- List of terms -> Depth of brackets -> Index of current term -> Use "|" or ", " -> Pretty list
     list :: [Term] -> Int -> Int -> Bool -> String
     list [] _ _ _ = ""
     list (t:[]) d i _ = prettyTerm t d i
@@ -31,13 +37,15 @@ instance Pretty Term where
       | otherwise = prettyTerm t d i ++ ", " ++ prettyTerm t2 d (i+1)
     list (t:ts) d i s = prettyTerm t d i ++ ", " ++ list ts d (i+1) s
 
+    -- Prints all combinators except a list
+    -- List of terms -> Depth of brackets -> Index of current term -> Pretty String
     comb :: [Term] -> Int -> Int -> String
     comb [] _ _     = ""
     comb (t:[]) d i = prettyTerm t d i
     comb (t:ts) d i = prettyTerm t d i ++ ", " ++ list ts d (i+1) False
 
 
-
+-- Tests:
 
 t0 = pretty (Var (VarName "A"))
 --"A"
