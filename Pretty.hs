@@ -6,12 +6,12 @@ class Pretty a where
 
 -- Instance for pretty printing a term
 instance Pretty Term where
-  pretty t = prettyTerm t 0 0 where
+  pretty term = prettyTerm term 0 0 where
     -- Pretty print a term.
     -- Term -> Depth of brackets -> Index of current term -> Pretty String 
     prettyTerm :: Term -> Int -> Int -> String
     prettyTerm (Var (VarName name)) _ _ = name
-    prettyTerm (Comb "." [Var (VarName name)]) d i = ".(" ++ name ++ ")"
+    prettyTerm (Comb "." [Var (VarName name)]) _ _ = ".(" ++ name ++ ")"
     prettyTerm (Comb "." (Var (VarName name):(Comb "." ts):_)) d i = "[" ++ name ++ "|.(" ++ list ts d (i+1) False ++ ")]"
     prettyTerm (Comb "." (Var (VarName name):(Comb c (t:ts)):_)) d i = "[" ++ name ++ "|" ++ c ++ "(" ++ list (t:ts) d (i+1) False ++ ")]"
     prettyTerm (Comb "." (Var (VarName name):ts)) d i = ".(" ++ name ++ ", " ++ list ts d i False ++ ")"
@@ -46,7 +46,7 @@ instance Pretty Term where
 
 
 -- Tests:
-
+{-
 t0 = pretty (Var (VarName "A"))
 --"A"
 t1 = pretty (Comb "true" [])
@@ -77,3 +77,4 @@ t13 = pretty (Comb "." [Var (VarName "I"), Comb "true" [], Comb "j" [Var (VarNam
 -- ".(I, true, j(J))"
 t14 = pretty (Comb "." [Var (VarName "K"), Comb "." [Var (VarName "L"), Var (VarName "M"), Var (VarName "N"), Var (VarName "O")]])
 -- "[K|.(L, M, N, O)]"
+-}
