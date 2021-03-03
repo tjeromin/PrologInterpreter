@@ -1,4 +1,7 @@
+module Substitution where
+
 import Type
+import Pretty
 
 -- Data type to represent substitutions in prolog.
 data Subst = Subst [(VarName, Term)]
@@ -10,13 +13,8 @@ domain (Subst xs) = map (\x -> fst x) $ filter isValid xs where
   -- Checks if a given variable is in a term.
   isValid :: (VarName, Term) -> Bool
   isValid (VarName v, Var (VarName v2)) = v /= v2
-  isValid (VarName v, Comb c [])        = True
   isValid (VarName v, Comb c (t:ts))    = isValid (VarName v, t) && isValid (VarName v, Comb c ts)
-
--- Tests:
-d0 = domain (Subst [(VarName "1", Var (VarName "2")), (VarName "1", Var (VarName "2")), (VarName "1", Comb "[]" [])])
-d1 = domain (Subst [(VarName "1", Comb "." [Comb "1" [], Comb "." [Comb "2" [], Comb "." [Comb "3" [], Comb "[]" []]]])])
-d2 = domain (Subst [(VarName "1", Comb "." [Comb "1" [], Comb "." [Comb "2" [], Comb "." [Comb "3" [], Var (VarName "1")]]])])
+  isValid _                             = True
 
 -- An empty substitution.
 empty :: Subst
@@ -32,14 +30,61 @@ apply (Subst []) t = t
 apply (Subst (x:xs)) (Var (VarName v)) 
   | VarName v == fst x = apply (Subst xs) (snd x)
   | otherwise          = apply (Subst xs) (Var (VarName v))
-apply s (Comb c ts) = Comb c (applyList s ts) where
+apply subst (Comb c ts) = Comb c (applyList subst ts) where
   -- Applies a subsitution to all terms in a list.
   applyList :: Subst -> [Term] -> [Term] 
-  applyList s [] = []
-  applyList s (t:ts) = apply s t : applyList s ts
+  applyList _ [] = []
+  applyList s (x:xs) = apply s x : applyList s xs
 
---Tests:
+-- Merges two substitutions.
+compose :: Subst -> Subst -> Subst
+compose (Subst list1) (Subst list2) = Subst (compList list1 list2) where 
+  compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
+  compList []  xs2      = xs2
+  compList xs1 []       = xs1
+  compList xs1 (x2:xs2) = applySubst x2 xs1 : compList xs2 xs1
+  -- Applies a substitution to a term of a one element substitution.
+  applySubst :: (VarName, Term) -> [(VarName, Term)] -> (VarName, Term)
+  applySubst s [] = s
+  applySubst (v, t) xs1 = (v, apply (Subst xs1) t)
+
+{-
+s1 = y -> z
+s2 = x -> y
+apply(s2, x) = y
+apply(s1, y) = z
+s1 + s2 = x -> z, y -> z
+-}
+
+-- Resticts a substitution such that it's defined only on the given variables.
+restrictTo :: Subst -> [VarName] -> Subst
+restrictTo (Subst list) vs = Subst (filter (\x -> elem (fst x) vs) list)
+
+{-instance Pretty Subst where
+  pretty (Subst []) = "{}"
+  pretty subst = printSubst (restrictTo subst (domain subst)) where
+    printSubst (Subst list) = printList list -}
+
+    
+
+
+
+-- Tests:
+d0 = domain (Subst [(VarName "1", Var (VarName "2")), (VarName "1", Var (VarName "2")), (VarName "1", Comb "[]" [])])
+d1 = domain (Subst [(VarName "1", Comb "." [Comb "1" [], Comb "." [Comb "2" [], Comb "." [Comb "3" [], Comb "[]" []]]])])
+d2 = domain (Subst [(VarName "1", Comb "." [Comb "1" [], Comb "." [Comb "2" [], Comb "." [Comb "3" [], Var (VarName "1")]]])])
+
 s0 = Subst [(VarName "1", Var (VarName "2"))]
+s1 = Subst [(VarName "1", Comb "." [Comb "1" [], Comb "." [Comb "2" [], Comb "." [Comb "3" [], Var (VarName "1")]]])]
+s2 = Subst [(VarName "Y", Var (VarName "Z"))]
+s3 = Subst [(VarName "X", Var (VarName "Y"))]
+s4 = Subst [(VarName "X", Var (VarName "Y")), (VarName "1", Var (VarName "2"))]
+
 t0 = Var (VarName "1")
 t1 = Comb "." [Var (VarName "1"), Comb "." [Comb "2" [], Comb "." [Comb "3" [], Var (VarName "1"), Comb "[]" []]]]
 
+v0 = [VarName "1", VarName "2"]
+
+comp0 = compose s2 s3 
+
+rest0 = restrictTo s4 v0

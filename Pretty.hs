@@ -1,3 +1,5 @@
+module Pretty where 
+
 import Type
 
 -- Prints a data type pretty 
