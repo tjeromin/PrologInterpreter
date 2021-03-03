@@ -1,7 +1,10 @@
 module Substitution where
 
+import Test.QuickCheck
+import Data.List
 import Type
 import Pretty
+import Variablen
 
 -- Data type to represent substitutions in prolog.
 data Subst = Subst [(VarName, Term)]
@@ -37,6 +40,7 @@ apply subst (Comb c ts) = Comb c (applyList subst ts) where
   applyList s (x:xs) = apply s x : applyList s xs
 
 -- Merges two substitutions.
+-- Not correct yet.
 compose :: Subst -> Subst -> Subst
 compose (Subst list1) (Subst list2) = Subst (compList list1 list2) where 
   compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
@@ -60,12 +64,37 @@ s1 + s2 = x -> z, y -> z
 restrictTo :: Subst -> [VarName] -> Subst
 restrictTo (Subst list) vs = Subst (filter (\x -> elem (fst x) vs) list)
 
-{-instance Pretty Subst where
+-- Instance for pretty printing a substitution.
+instance Pretty Subst where
   pretty (Subst []) = "{}"
   pretty subst = printSubst (restrictTo subst (domain subst)) where
-    printSubst (Subst list) = printList list -}
+    -- Pretty prints a substitution.
+    printSubst :: Subst -> String
+    printSubst (Subst list) = "{" ++ printList list ++ "}"
 
+    -- Prints all elements of a substitution.
+    printList :: [(VarName, Term)] -> String
+    printList []     = ""
+    printList (x:[]) = pretty (Var (fst x)) ++ " -> " ++ pretty (snd x)
+    printList (x:xs) = pretty (Var (fst x)) ++ " -> " ++ pretty (snd x) ++ ", " ++ printList xs
     
+-- Instance for listing all variables in a substitution.
+instance Vars Subst where 
+  allVars (Subst [])     = []
+  allVars (Subst (x:xs)) = nub ([fst x] ++ allVars (snd x) ++ allVars (Subst xs))
+
+-- Generator for substitutions.
+instance Arbitrary Subst where 
+  arbitrary = Subst <$> do 
+    v <- arbitrary
+    t <- arbitrary
+    return arbSubst
+
+arbSubst :: Gen ([(VarName, Term)])
+arbSubst = do
+  v <- arbitrary
+  t <- arbitrary
+  return [(v, t)]
 
 
 
@@ -79,6 +108,7 @@ s1 = Subst [(VarName "1", Comb "." [Comb "1" [], Comb "." [Comb "2" [], Comb "."
 s2 = Subst [(VarName "Y", Var (VarName "Z"))]
 s3 = Subst [(VarName "X", Var (VarName "Y"))]
 s4 = Subst [(VarName "X", Var (VarName "Y")), (VarName "1", Var (VarName "2"))]
+s5 = Subst [(VarName "1", Comb "." [Var (VarName "2"), Var (VarName "3"), Var (VarName "4")])]
 
 t0 = Var (VarName "1")
 t1 = Comb "." [Var (VarName "1"), Comb "." [Comb "2" [], Comb "." [Comb "3" [], Var (VarName "1"), Comb "[]" []]]]
