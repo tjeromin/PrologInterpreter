@@ -1,7 +1,12 @@
-module Variablen where
+module Variables 
+  ( Vars
+  , allVars
+  , freshVars
+  ) where
 
-import           Data.List
-import           Type
+import Data.List
+
+import Type
 
 class Vars a where
   allVars :: a -> [VarName]
