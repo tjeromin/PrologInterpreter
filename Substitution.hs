@@ -1,4 +1,5 @@
-module Substitution where
+{-# LANGUAGE TemplateHaskell #-}
+module Substitution (domain, empty, single, apply, restrictTo, pretty, allVars) where
 
 import Test.QuickCheck
 import Data.List
@@ -27,17 +28,19 @@ empty = Subst []
 single :: VarName -> Term -> Subst
 single v t = Subst [(v, t)]
 
--- Applies a subsitution to a term.
+-- Applies a substitution to a term.
 apply :: Subst -> Term -> Term
-apply (Subst []) t = t
-apply (Subst (x:xs)) (Var (VarName v)) 
-  | VarName v == fst x = apply (Subst xs) (snd x)
-  | otherwise          = apply (Subst xs) (Var (VarName v))
-apply subst (Comb c ts) = Comb c (applyList subst ts) where
-  -- Applies a subsitution to all terms in a list.
+apply s t = apply' (restrictTo s (domain s)) t where
+  apply' :: Subst -> Term -> Term
+  apply' (Subst []) t = t
+  apply' (Subst (x:xs)) (Var (VarName v)) 
+    | VarName v == fst x = apply' (Subst xs) (snd x)
+    | otherwise          = apply' (Subst xs) (Var (VarName v))
+  apply' subst (Comb c ts) = Comb c (applyList subst ts) where
+  -- Applies a substitution to all terms in a list.
   applyList :: Subst -> [Term] -> [Term] 
   applyList _ [] = []
-  applyList s (x:xs) = apply s x : applyList s xs
+  applyList s (x:xs) = apply' s x : applyList s xs
 
 -- Merges two substitutions.
 -- Not correct yet.
@@ -87,8 +90,32 @@ instance Vars Subst where
 instance Arbitrary Subst where 
   arbitrary = Subst <$> do 
     xs <- arbitrary
-    return $ nubBy (\t0 t1 -> fst t0 == fst t1) xs 
+    return $ nubBy (\t0 t1 -> fst t0 == fst t1) (filter (\x -> check (fst x) (snd x)) xs) where
+      check :: VarName -> Term -> Bool
+      check v (Var v2) = v /= v2
+      check v (Comb c []) = True
+      check v (Comb c (y:ys)) = check v y && check v (Comb c ys)
 
+
+-- Property: Apply empty doesn't change a term.
+prop_apply_empty :: Term -> Bool
+prop_apply_empty t = apply empty t == t
+
+-- Property: Apply a single substitution with element v doesn't change a Term which only consists of v.
+prop_apply_single :: Term -> VarName -> Bool
+prop_apply_single t v = 
+  elem v (domain t) ==> apply (single v t) (Var v) == t
+
+-- Property: Compose two subst is equal to applying the first after the second subst.
+prop_apply_compose :: Term -> Subst -> Subst -> Bool
+prop_apply_compose t s1 s2 = apply (compose s1 s2) t == apply s1 (apply s2 t) 
+
+
+
+
+-- Check all properties in this module:
+return []
+testAll = $quickCheckAll
 
 
 -- Tests:
