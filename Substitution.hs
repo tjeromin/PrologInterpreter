@@ -6,8 +6,7 @@ module Substitution
   , apply
   , restrictTo
   , pretty
-  , allVars
-  ) where
+  , allVars  ) where
 
 import Data.List
 
@@ -41,17 +40,17 @@ single v t = Subst [(v, t)]
 
 -- Applies a substitution to a term.
 apply :: Subst -> Term -> Term
-apply s t = apply' (restrictTo s (domain s)) t (restrictTo s (domain s)) where
-  apply' :: Subst -> Term -> Subst -> Term
-  apply' (Subst []) t _ = t
-  apply' (Subst (x:xs)) (Var (VarName v)) s
-    | VarName v == fst x = apply' s (snd x) s
-    | otherwise          = apply' (Subst xs) (Var (VarName v)) s
-  apply' subst (Comb c ts) s = Comb c (applyList subst ts s) where
-  -- Applies a substitution to all terms in a list.
-  applyList :: Subst -> [Term] -> Subst -> [Term] 
-  applyList _ [] _ = []
-  applyList s0 (x:xs) s1 = apply' s0 x s1 : applyList s0 xs s1
+apply (Subst []) t = t
+apply (Subst (x : xs)) (Var (VarName v))
+  | VarName v == fst x = snd x
+  | otherwise = apply (Subst xs) (Var (VarName v))
+apply subst (Comb c ts) = Comb c (applyList subst ts)
+  where
+    -- Applies a substitution to all terms in a list.
+    applyList :: Subst -> [Term] -> [Term]
+    applyList _ []       = []
+    applyList s (x : xs) = apply s x : applyList s xs
+
 
 -- Merges two substitutions.
 compose :: Subst -> Subst -> Subst
@@ -68,7 +67,7 @@ compose (Subst list1) (Subst list2)
   compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
   compList []  xs2      = xs2
   compList xs1 []       = xs1
-  compList xs1 (x2:xs2) = applySubst x2 xs1 : compList xs2 xs1
+  compList xs1 (x2:xs2) = applySubst x2 xs1 : compList xs1 xs2
   
   -- Applies a substitution to a term of a one element substitution.
   applySubst :: (VarName, Term) -> [(VarName, Term)] -> (VarName, Term)
@@ -79,6 +78,12 @@ compose (Subst list1) (Subst list2)
 -- Returns only the list of a substitution.
 substToList :: Subst -> [(VarName, Term)]
 substToList (Subst xs) = xs
+
+-- s8 = "{_ -> f, B -> g(g(f, f), _0), A -> _}"
+-- s9 = "{_ -> _0, _0 -> f, A -> g, X -> Y(_0)}"
+-- t0 = B       -> B
+-- t1 = _0      -> f
+-- t2 = _0, X   -> f, Y(f)
 
 {-
 s1 = y -> z
@@ -112,8 +117,11 @@ instance Pretty Subst
 -- Instance for listing all variables in a substitution.
 instance Vars Subst 
  where 
-  allVars (Subst [])     = []
-  allVars (Subst (x:xs)) = nub ([fst x] ++ allVars (snd x) ++ allVars (Subst xs))
+    allVars (Subst [])     = []
+    allVars (Subst [(v, Var v2)]) 
+      | v == v2   = []
+      | otherwise = [v, v2]
+    allVars (Subst (x:xs)) = nub ([fst x] ++ allVars (snd x) ++ allVars (Subst xs))
 
 -- Generator for substitutions.
 instance Arbitrary Subst 
@@ -137,7 +145,7 @@ prop_apply_empty t = apply empty t == t
 -- Property: Apply a single substitution with element v doesn't change a Term 
 -- which only consists of v.
 prop_apply_single :: Term -> VarName -> Property
-prop_apply_single t v = 
+prop_apply_single t v = -- !!!!!!!!!!!!!!!!!!!!!!
   elem v (domain (single v t)) ==> apply (single v t) (Var v) == t
 
 -- Property: Compose two subst is equal to applying the first after the second 
@@ -167,8 +175,56 @@ isVarInTerm v (Comb c (x:xs)) = isVarInTerm v x || isVarInTerm v (Comb c xs)
 
 -- Property: Checks if the domain of two composed substitutions is equal or less
 -- to the domain of both substitution combined.
---prop_domain_compose_combined :: Subst -> Subst -> Bool
---prop_domain_compose_combined s1 s2 = domain (compose s1 s2)
+prop_domain_compose_combined :: Subst -> Subst -> Bool
+prop_domain_compose_combined s1 s2 = (length $ nub $ domain (compose s1 s2)) <=
+  (length $ nub (domain s1 ++ domain s2)) -- endlosschleife
+
+-- Property: Checks if composed single substitutions which depicts in a cycle 
+-- are only defined on the first variable.
+prop_domain_compose_single :: VarName -> VarName -> Property
+prop_domain_compose_single v1 v2 = v1 /= v2 
+  ==> domain (compose (single v2 (Var v1)) (single v1 (Var v2))) == [v2]
+
+-- Property: An empty substitution contains no variables.
+prop_allVars_empty :: Bool
+prop_allVars_empty = allVars empty == []
+
+-- Property: A single substitution which variable depicts on itself contains no 
+-- variable.
+prop_allVars_var :: VarName -> Bool
+prop_allVars_var v = (allVars $ single v (Var v)) == []
+
+-- Property: allVarsof a single substitution is the same as allVars of its term
+-- combined with its variable if the term is unequal to the variable.
+prop_allVars_term :: VarName -> Term -> Property
+prop_allVars_term v t = t /= Var v 
+  ==> allVars (single v t) == nub ([v] ++ allVars t)
+
+-- Property: allVars of composed substitutions is a subset of allVars of the two 
+-- combined substitutions.
+prop_allVars_compose_subset :: Subst -> Subst -> Bool
+prop_allVars_compose_subset s1 s2 = (length $ nub $ allVars (compose s1 s2)) <=
+  (length $ nub (allVars s1 ++ allVars s2))
+
+-- Property: allVars of two composed single substitutions which variables 
+-- depicts on themselfes are these two variables.
+prop_allVars_compose_single :: VarName -> VarName -> Property
+prop_allVars_compose_single v1 v2 = v1 /= v2 
+  ==> allVars (compose (single v2 (Var v1)) (single v1 (Var v2))) == [v1, v2]
+
+-- Property: domain is a subset of allVars of the same substitution.
+prop_domain_allVars :: Subst -> Bool
+prop_domain_allVars s = (length $ nub $ domain s) <= (length $ nub $ allVars s)
+
+-- Property: domain of a restricted empty substitution is {} for every term.
+prop_restrictTo_empty :: [VarName] -> Bool
+prop_restrictTo_empty xs = (domain $ restrictTo empty xs) == []
+
+-- Property: domain of every restricted substitution is a subset of the given
+-- variables for the restriction.
+prop_restrictTo_subset :: [VarName] -> Subst -> Bool
+prop_restrictTo_subset xs s = (length $ nub $ domain $ restrictTo s xs) 
+  <= (length $ nub xs)
 
 -- Check all properties in this module:
 return []
