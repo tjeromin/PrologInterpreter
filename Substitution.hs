@@ -86,15 +86,8 @@ instance Vars Subst where
 -- Generator for substitutions.
 instance Arbitrary Subst where 
   arbitrary = Subst <$> do 
-    v <- arbitrary
-    t <- arbitrary
-    return arbSubst
-
-arbSubst :: Gen ([(VarName, Term)])
-arbSubst = do
-  v <- arbitrary
-  t <- arbitrary
-  return [(v, t)]
+    xs <- arbitrary
+    return $ nubBy (\t0 t1 -> fst t0 == fst t1) xs 
 
 
 
