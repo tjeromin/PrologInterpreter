@@ -12,7 +12,7 @@ instance Pretty Term where
     -- Pretty print a term.
     -- Term -> Depth of brackets -> Index of current term -> Pretty String 
     prettyTerm :: Term -> Int -> Int -> String
-    prettyTerm (Var (VarName name)) _ _ = name
+    prettyTerm (Var (VarName name))            _ _ = name
     prettyTerm (Comb "." [Var (VarName name)]) _ _ = ".(" ++ name ++ ")"
     prettyTerm (Comb "." (Var (VarName name):(Comb "." ts):_)) d i 
       = "[" ++ name ++ "|.(" ++ list ts d (i+1) False ++ ")]"
@@ -20,7 +20,7 @@ instance Pretty Term where
       = "[" ++ name ++ "|" ++ c ++ "(" ++ list (t:ts) d (i+1) False ++ ")]"
     prettyTerm (Comb "." (Var (VarName name):ts)) d i 
       = ".(" ++ name ++ ", " ++ list ts d i False ++ ")"
-    prettyTerm (Comb "." [t]) d i = prettyTerm t d i
+    prettyTerm (Comb "." [t])               d i = prettyTerm t d i
     prettyTerm (Comb "." (t:[Comb "[]" _])) d i 
       | i == 0    = "[" ++ prettyTerm t d i ++ "]"
       | otherwise = prettyTerm t d i
@@ -47,10 +47,9 @@ instance Pretty Term where
     -- List of terms -> Depth of brackets -> Index of current term -> 
     -- Pretty String
     comb :: [Term] -> Int -> Int -> String
-    comb [] _ _     = ""
+    comb []     _ _ = ""
     comb (t:[]) d i = prettyTerm t d i
     comb (t:ts) d i = prettyTerm t d i ++ ", " ++ list ts d (i+1) False
-
 
 -- Tests:
 {-
