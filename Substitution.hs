@@ -54,24 +54,27 @@ apply s t = apply' (restrictTo s (domain s)) t (restrictTo s (domain s)) where
   applyList s0 (x:xs) s1 = apply' s0 x s1 : applyList s0 xs s1
 
 -- Merges two substitutions.
--- Not correct yet.
 compose :: Subst -> Subst -> Subst
 compose (Subst list1) (Subst list2) 
   = Subst (compList (substToList (restrictTo (Subst list1) (filterDupVars list1 list2))) list2) 
  where
+  -- Returns all variables from the first list that aren't in the second list.
   filterDupVars :: [(VarName, Term)] -> [(VarName, Term)] -> [VarName]
   filterDupVars l1 l2 
     = filter (\elemL1 -> notElem elemL1 (map (\x -> fst x) l2)) 
              (map (\x -> fst x) l1)
-
+  -- Applies all substitutions of the first list to all substitutions of the 
+  -- second list.
   compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
   compList []  xs2      = xs2
   compList xs1 []       = xs1
   compList xs1 (x2:xs2) = applySubst x2 xs1 : compList xs2 xs1
+  
   -- Applies a substitution to a term of a one element substitution.
   applySubst :: (VarName, Term) -> [(VarName, Term)] -> (VarName, Term)
   applySubst s [] = s
   applySubst (v, t) xs1 = (v, apply (Subst xs1) t)
+  
 
 -- Returns only the list of a substitution.
 substToList :: Subst -> [(VarName, Term)]
@@ -81,7 +84,7 @@ substToList (Subst xs) = xs
 s1 = y -> z
 s2 = x -> y
 apply(s2, x) = y
-apply(s1, y) = z
+apply(s1, apply(s2, x)) = z
 s1 + s2 = x -> z, y -> z
 -}
 
@@ -120,6 +123,7 @@ instance Arbitrary Subst
     return $ nubBy (\t0 t1 -> fst t0 == fst t1) 
                    (filter (\x -> check (fst x) (snd x)) xs) 
      where
+      -- Checks if a variable is in a term.
       check :: VarName -> Term -> Bool
       check v (Var v2) = v /= v2
       check v (Comb c []) = True
@@ -141,12 +145,30 @@ prop_apply_single t v =
 prop_apply_compose :: Term -> Subst -> Subst -> Bool
 prop_apply_compose t s1 s2 = apply (compose s1 s2) t == apply s1 (apply s2 t) 
 
-s6 = Subst [(VarName "_",Comb "f" [Var (VarName "A")]),
-  (VarName "A",Comb "g" [Comb "f" [Comb "g" [Comb "g" [Comb "g" []],Comb "g" [Comb "g" []]],Comb "g" [Var (VarName "_0"),Comb "f" []]],Comb "f" []]),
-  (VarName "_0",Comb "g" []),
-  (VarName "B",Var (VarName "_"))]
-s7 = Subst [(VarName "_0",Comb "f" []),(VarName "_",Var (VarName "A"))]
+-- Property: A empty substitution is not defined on any variables.
+prop_domain_empty :: Bool
+prop_domain_empty = domain empty == []
 
+-- Property: A substitution with one element which is depicted on itself is 
+-- defined on no variable.
+prop_domain_single_var :: VarName -> Bool
+prop_domain_single_var v = domain (single v (Var v)) == []
+
+-- Property: A substitution with one element is defined on the variable of this
+-- element.
+prop_domain_single_term :: VarName -> Term -> Property
+prop_domain_single_term v t = 
+  not (isVarInTerm v t) ==> domain (single v t) == [v] 
+
+-- Checks if a given variable is in a given term.
+isVarInTerm v (Var v2)        = v == v2
+isVarInTerm v (Comb _ [])     = False
+isVarInTerm v (Comb c (x:xs)) = isVarInTerm v x || isVarInTerm v (Comb c xs)
+
+-- Property: Checks if the domain of two composed substitutions is equal or less
+-- to the domain of both substitution combined.
+--prop_domain_compose_combined :: Subst -> Subst -> Bool
+--prop_domain_compose_combined s1 s2 = domain (compose s1 s2)
 
 -- Check all properties in this module:
 return []
@@ -159,7 +181,9 @@ testAll = $quickCheckAll
 
 
 
-
+t6 = Var (VarName "B")
+s8 = Subst [(VarName "_",Comb "f" []),(VarName "B",Comb "g" [Comb "g" [Comb "f" [],Comb "f" []],Var (VarName "_0")]),(VarName "A",Var (VarName "_"))]
+s9 = Subst [(VarName "_",Var (VarName "_0")),(VarName "_0",Comb "f" []),(VarName "A",Comb "g" [])]
 
 
 
@@ -175,6 +199,12 @@ s2 = Subst [(VarName "Y", Var (VarName "Z"))]
 s3 = Subst [(VarName "X", Var (VarName "Y"))]
 s4 = Subst [(VarName "X", Var (VarName "Y")), (VarName "1", Var (VarName "2"))]
 s5 = Subst [(VarName "1", Comb "." [Var (VarName "2"), Var (VarName "3"), Var (VarName "4")])]
+s6 = Subst [(VarName "_",Comb "f" [Var (VarName "A")]),
+  (VarName "A",Comb "g" [Comb "f" [Comb "g" [Comb "g" [Comb "g" []],Comb "g" [Comb "g" []]],Comb "g" [Var (VarName "_0"),Comb "f" []]],Comb "f" []]),
+  (VarName "_0",Comb "g" []),
+  (VarName "B",Var (VarName "_"))]
+s7 = Subst [(VarName "_0",Comb "f" []),(VarName "_",Var (VarName "A"))]
+
 
 t0 = Var (VarName "1")
 t1 = Comb "." [Var (VarName "1"), Comb "." [Comb "2" [], Comb "." [Comb "3" [], Var (VarName "1"), Comb "[]" []]]]
