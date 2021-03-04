@@ -57,9 +57,8 @@ apply s t = apply' (restrictTo s (domain s)) t (restrictTo s (domain s)) where
 -- Not correct yet.
 compose :: Subst -> Subst -> Subst
 compose (Subst list1) (Subst list2) 
-  = Subst (compList (restrictTo (Subst list 1 (filterDupVars list1 list2))
-    list2) 
- where 
+  = Subst (compList (substToList (restrictTo (Subst list1) (filterDupVars list1 list2))) list2) 
+ where
   filterDupVars :: [(VarName, Term)] -> [(VarName, Term)] -> [VarName]
   filterDupVars l1 l2 
     = filter (\elemL1 -> notElem elemL1 (map (\x -> fst x) l2)) 
@@ -73,6 +72,10 @@ compose (Subst list1) (Subst list2)
   applySubst :: (VarName, Term) -> [(VarName, Term)] -> (VarName, Term)
   applySubst s [] = s
   applySubst (v, t) xs1 = (v, apply (Subst xs1) t)
+
+-- Returns only the list of a substitution.
+substToList :: Subst -> [(VarName, Term)]
+substToList (Subst xs) = xs
 
 {-
 s1 = y -> z
