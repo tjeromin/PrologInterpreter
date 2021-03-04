@@ -4,9 +4,12 @@ module Substitution
   , empty
   , single
   , apply
+  , compose
   , restrictTo
   , pretty
-  , allVars  ) where
+  , allVars
+  , testAll
+  ) where
 
 import Data.List
 
@@ -14,7 +17,7 @@ import Test.QuickCheck
 
 import Type
 import Pretty
-import Variablen
+import Variables
 
 -- Data type to represent substitutions in prolog.
 data Subst = Subst [(VarName, Term)]
@@ -74,10 +77,10 @@ compose (Subst list1) (Subst list2)
   applySubst s [] = s
   applySubst (v, t) xs1 = (v, apply (Subst xs1) t)
   
+  -- Returns only the list of a substitution.
+  substToList :: Subst -> [(VarName, Term)]
+  substToList (Subst xs) = xs
 
--- Returns only the list of a substitution.
-substToList :: Subst -> [(VarName, Term)]
-substToList (Subst xs) = xs
 
 -- s8 = "{_ -> f, B -> g(g(f, f), _0), A -> _}"
 -- s9 = "{_ -> _0, _0 -> f, A -> g, X -> Y(_0)}"
@@ -134,7 +137,7 @@ instance Arbitrary Subst
       -- Checks if a variable is in a term.
       check :: VarName -> Term -> Bool
       check v (Var v2) = v /= v2
-      check v (Comb c []) = True
+      check _ (Comb _ []) = True
       check v (Comb c (y:ys)) = check v y && check v (Comb c ys)
 
 
@@ -144,9 +147,8 @@ prop_apply_empty t = apply empty t == t
 
 -- Property: Apply a single substitution with element v doesn't change a Term 
 -- which only consists of v.
-prop_apply_single :: Term -> VarName -> Property
-prop_apply_single t v = -- !!!!!!!!!!!!!!!!!!!!!!
-  elem v (domain (single v t)) ==> apply (single v t) (Var v) == t
+prop_apply_single :: Term -> VarName -> Bool
+prop_apply_single t v = apply (single v t) (Var v) == t
 
 -- Property: Compose two subst is equal to applying the first after the second 
 -- subst.
@@ -169,8 +171,9 @@ prop_domain_single_term v t =
   not (isVarInTerm v t) ==> domain (single v t) == [v] 
 
 -- Checks if a given variable is in a given term.
+isVarInTerm :: VarName -> Term -> Bool
 isVarInTerm v (Var v2)        = v == v2
-isVarInTerm v (Comb _ [])     = False
+isVarInTerm _ (Comb _ [])     = False
 isVarInTerm v (Comb c (x:xs)) = isVarInTerm v x || isVarInTerm v (Comb c xs)
 
 -- Property: Checks if the domain of two composed substitutions is equal or less
@@ -228,6 +231,7 @@ prop_restrictTo_subset xs s = (length $ nub $ domain $ restrictTo s xs)
 
 -- Check all properties in this module:
 return []
+testAll :: IO Bool
 testAll = $quickCheckAll
 
 
@@ -236,7 +240,7 @@ testAll = $quickCheckAll
 
 
 
-
+{-
 t6 = Var (VarName "B")
 s8 = Subst [(VarName "_",Comb "f" []),(VarName "B",Comb "g" [Comb "g" [Comb "f" [],Comb "f" []],Var (VarName "_0")]),(VarName "A",Var (VarName "_"))]
 s9 = Subst [(VarName "_",Var (VarName "_0")),(VarName "_0",Comb "f" []),(VarName "A",Comb "g" [])]
@@ -270,3 +274,4 @@ v0 = [VarName "1", VarName "2"]
 comp0 = compose s2 s3 
 
 rest0 = restrictTo s4 v0
+-}
