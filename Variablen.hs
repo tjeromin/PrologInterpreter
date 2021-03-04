@@ -21,4 +21,6 @@ instance Vars Goal where
   allVars (Goal xs) = nub $ concatMap allVars xs
 
 freshVars :: [VarName]
-freshVars = map (\x -> VarName x) ([[i] | i <- ['A' .. 'Z']] ++ [i : show j | j <- [0 ..], i <- ['A' .. 'Z']])
+freshVars = map (\x -> VarName x) 
+            ([[i] | i <- ['A' .. 'Z']] ++ 
+            [i : show j | j <- [0 ..], i <- ['A' .. 'Z']])

@@ -14,9 +14,12 @@ instance Pretty Term where
     prettyTerm :: Term -> Int -> Int -> String
     prettyTerm (Var (VarName name)) _ _ = name
     prettyTerm (Comb "." [Var (VarName name)]) _ _ = ".(" ++ name ++ ")"
-    prettyTerm (Comb "." (Var (VarName name):(Comb "." ts):_)) d i = "[" ++ name ++ "|.(" ++ list ts d (i+1) False ++ ")]"
-    prettyTerm (Comb "." (Var (VarName name):(Comb c (t:ts)):_)) d i = "[" ++ name ++ "|" ++ c ++ "(" ++ list (t:ts) d (i+1) False ++ ")]"
-    prettyTerm (Comb "." (Var (VarName name):ts)) d i = ".(" ++ name ++ ", " ++ list ts d i False ++ ")"
+    prettyTerm (Comb "." (Var (VarName name):(Comb "." ts):_)) d i 
+      = "[" ++ name ++ "|.(" ++ list ts d (i+1) False ++ ")]"
+    prettyTerm (Comb "." (Var (VarName name):(Comb c (t:ts)):_)) d i 
+      = "[" ++ name ++ "|" ++ c ++ "(" ++ list (t:ts) d (i+1) False ++ ")]"
+    prettyTerm (Comb "." (Var (VarName name):ts)) d i 
+      = ".(" ++ name ++ ", " ++ list ts d i False ++ ")"
     prettyTerm (Comb "." [t]) d i = prettyTerm t d i
     prettyTerm (Comb "." (t:[Comb "[]" _])) d i 
       | i == 0    = "[" ++ prettyTerm t d i ++ "]"
@@ -28,7 +31,8 @@ instance Pretty Term where
     prettyTerm (Comb name ts) d i = name ++ "(" ++ comb ts d i ++ ")"
 
     -- Prints a list
-    -- List of terms -> Depth of brackets -> Index of current term -> Use "|" or ", " -> Pretty list
+    -- List of terms -> Depth of brackets -> Index of current term -> 
+    -- Use "|" or ", " -> Pretty list
     list :: [Term] -> Int -> Int -> Bool -> String
     list [] _ _ _ = ""
     list (t:[]) d i _ = prettyTerm t d i
@@ -40,7 +44,8 @@ instance Pretty Term where
     list (t:ts) d i s = prettyTerm t d i ++ ", " ++ list ts d (i+1) s
 
     -- Prints all combinators except a list
-    -- List of terms -> Depth of brackets -> Index of current term -> Pretty String
+    -- List of terms -> Depth of brackets -> Index of current term -> 
+    -- Pretty String
     comb :: [Term] -> Int -> Int -> String
     comb [] _ _     = ""
     comb (t:[]) d i = prettyTerm t d i

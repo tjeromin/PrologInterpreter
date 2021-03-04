@@ -1,8 +1,18 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Substitution (domain, empty, single, apply, restrictTo, pretty, allVars) where
+module Substitution 
+  ( domain 
+  , empty
+  , single
+  , apply
+  , restrictTo
+  , pretty
+  , allVars
+  ) where
+
+import Data.List
 
 import Test.QuickCheck
-import Data.List
+
 import Type
 import Pretty
 import Variablen
@@ -17,7 +27,8 @@ domain (Subst xs) = map (\x -> fst x) $ filter isValid xs where
   -- Checks if a given variable is in a term.
   isValid :: (VarName, Term) -> Bool
   isValid (VarName v, Var (VarName v2)) = v /= v2
-  isValid (VarName v, Comb c (t:ts))    = isValid (VarName v, t) && isValid (VarName v, Comb c ts)
+  isValid (VarName v, Comb c (t:ts))    = isValid (VarName v, t) 
+                                          && isValid (VarName v, Comb c ts)
   isValid _                             = True
 
 -- An empty substitution.
@@ -45,7 +56,15 @@ apply s t = apply' (restrictTo s (domain s)) t (restrictTo s (domain s)) where
 -- Merges two substitutions.
 -- Not correct yet.
 compose :: Subst -> Subst -> Subst
-compose (Subst list1) (Subst list2) = Subst (compList list1 list2) where 
+compose (Subst list1) (Subst list2) 
+  = Subst (compList (restrictTo (Subst list 1 (filterDupVars list1 list2))
+    list2) 
+ where 
+  filterDupVars :: [(VarName, Term)] -> [(VarName, Term)] -> [VarName]
+  filterDupVars l1 l2 
+    = filter (\elemL1 -> notElem elemL1 (map (\x -> fst x) l2)) 
+             (map (\x -> fst x) l1)
+
   compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
   compList []  xs2      = xs2
   compList xs1 []       = xs1
@@ -68,9 +87,11 @@ restrictTo :: Subst -> [VarName] -> Subst
 restrictTo (Subst list) vs = Subst (filter (\x -> elem (fst x) vs) list)
 
 -- Instance for pretty printing a substitution.
-instance Pretty Subst where
+instance Pretty Subst 
+ where
   pretty (Subst []) = "{}"
-  pretty subst = printSubst (restrictTo subst (domain subst)) where
+  pretty subst = printSubst (restrictTo subst (domain subst)) 
+   where
     -- Pretty prints a substitution.
     printSubst :: Subst -> String
     printSubst (Subst list) = "{" ++ printList list ++ "}"
@@ -79,18 +100,23 @@ instance Pretty Subst where
     printList :: [(VarName, Term)] -> String
     printList []     = ""
     printList (x:[]) = pretty (Var (fst x)) ++ " -> " ++ pretty (snd x)
-    printList (x:xs) = pretty (Var (fst x)) ++ " -> " ++ pretty (snd x) ++ ", " ++ printList xs
+    printList (x:xs) = pretty (Var (fst x)) ++ " -> " ++ pretty (snd x) ++ ", " 
+                       ++ printList xs
     
 -- Instance for listing all variables in a substitution.
-instance Vars Subst where 
+instance Vars Subst 
+ where 
   allVars (Subst [])     = []
   allVars (Subst (x:xs)) = nub ([fst x] ++ allVars (snd x) ++ allVars (Subst xs))
 
 -- Generator for substitutions.
-instance Arbitrary Subst where 
+instance Arbitrary Subst 
+ where 
   arbitrary = Subst <$> do 
     xs <- arbitrary
-    return $ nubBy (\t0 t1 -> fst t0 == fst t1) (filter (\x -> check (fst x) (snd x)) xs) where
+    return $ nubBy (\t0 t1 -> fst t0 == fst t1) 
+                   (filter (\x -> check (fst x) (snd x)) xs) 
+     where
       check :: VarName -> Term -> Bool
       check v (Var v2) = v /= v2
       check v (Comb c []) = True
@@ -101,12 +127,14 @@ instance Arbitrary Subst where
 prop_apply_empty :: Term -> Bool
 prop_apply_empty t = apply empty t == t
 
--- Property: Apply a single substitution with element v doesn't change a Term which only consists of v.
+-- Property: Apply a single substitution with element v doesn't change a Term 
+-- which only consists of v.
 prop_apply_single :: Term -> VarName -> Property
 prop_apply_single t v = 
   elem v (domain (single v t)) ==> apply (single v t) (Var v) == t
 
--- Property: Compose two subst is equal to applying the first after the second subst.
+-- Property: Compose two subst is equal to applying the first after the second 
+-- subst.
 prop_apply_compose :: Term -> Subst -> Subst -> Bool
 prop_apply_compose t s1 s2 = apply (compose s1 s2) t == apply s1 (apply s2 t) 
 
@@ -122,6 +150,17 @@ return []
 testAll = $quickCheckAll
 
 
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------
 -- Tests:
 d0 = domain (Subst [(VarName "1", Var (VarName "2")), (VarName "1", Var (VarName "2")), (VarName "1", Comb "[]" [])])
 d1 = domain (Subst [(VarName "1", Comb "." [Comb "1" [], Comb "." [Comb "2" [], Comb "." [Comb "3" [], Comb "[]" []]]])])
