@@ -30,17 +30,17 @@ single v t = Subst [(v, t)]
 
 -- Applies a substitution to a term.
 apply :: Subst -> Term -> Term
-apply s t = apply' (restrictTo s (domain s)) t where
-  apply' :: Subst -> Term -> Term
-  apply' (Subst []) t = t
-  apply' (Subst (x:xs)) (Var (VarName v)) 
-    | VarName v == fst x = apply' (Subst xs) (snd x)
-    | otherwise          = apply' (Subst xs) (Var (VarName v))
-  apply' subst (Comb c ts) = Comb c (applyList subst ts) where
+apply s t = apply' (restrictTo s (domain s)) t (restrictTo s (domain s)) where
+  apply' :: Subst -> Term -> Subst -> Term
+  apply' (Subst []) t _ = t
+  apply' (Subst (x:xs)) (Var (VarName v)) s
+    | VarName v == fst x = apply' s (snd x) s
+    | otherwise          = apply' (Subst xs) (Var (VarName v)) s
+  apply' subst (Comb c ts) s = Comb c (applyList subst ts s) where
   -- Applies a substitution to all terms in a list.
-  applyList :: Subst -> [Term] -> [Term] 
-  applyList _ [] = []
-  applyList s (x:xs) = apply' s x : applyList s xs
+  applyList :: Subst -> [Term] -> Subst -> [Term] 
+  applyList _ [] _ = []
+  applyList s0 (x:xs) s1 = apply' s0 x s1 : applyList s0 xs s1
 
 -- Merges two substitutions.
 -- Not correct yet.
@@ -102,15 +102,19 @@ prop_apply_empty :: Term -> Bool
 prop_apply_empty t = apply empty t == t
 
 -- Property: Apply a single substitution with element v doesn't change a Term which only consists of v.
-prop_apply_single :: Term -> VarName -> Bool
+prop_apply_single :: Term -> VarName -> Property
 prop_apply_single t v = 
-  elem v (domain t) ==> apply (single v t) (Var v) == t
+  elem v (domain (single v t)) ==> apply (single v t) (Var v) == t
 
 -- Property: Compose two subst is equal to applying the first after the second subst.
 prop_apply_compose :: Term -> Subst -> Subst -> Bool
 prop_apply_compose t s1 s2 = apply (compose s1 s2) t == apply s1 (apply s2 t) 
 
-
+s6 = Subst [(VarName "_",Comb "f" [Var (VarName "A")]),
+  (VarName "A",Comb "g" [Comb "f" [Comb "g" [Comb "g" [Comb "g" []],Comb "g" [Comb "g" []]],Comb "g" [Var (VarName "_0"),Comb "f" []]],Comb "f" []]),
+  (VarName "_0",Comb "g" []),
+  (VarName "B",Var (VarName "_"))]
+s7 = Subst [(VarName "_0",Comb "f" []),(VarName "_",Var (VarName "A"))]
 
 
 -- Check all properties in this module:
