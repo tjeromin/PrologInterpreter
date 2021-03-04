@@ -28,4 +28,4 @@ instance Vars Goal where
 freshVars :: [VarName]
 freshVars = map (\x -> VarName x) 
             ([[i] | i <- ['A' .. 'Z']] ++ 
-            [i : show j | j <- [0 ..], i <- ['A' .. 'Z']])
+            [i : show j | j <- [(0::Int) ..], i <- ['A' .. 'Z']])
