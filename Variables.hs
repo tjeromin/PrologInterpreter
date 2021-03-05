@@ -1,12 +1,11 @@
 module Variables
-  ( Vars,
-    allVars,
-    freshVars,
-  )
-where
+  ( Vars
+  , allVars
+  , freshVars
+  ) where
 
-import           Data.List
-import           Type
+import Data.List
+import Type
 
 --Returns list of VarNames of the given data type (Term, Rule, Prog, Goal) without duplicates
 class Vars a where
