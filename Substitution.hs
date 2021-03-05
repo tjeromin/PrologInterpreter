@@ -43,10 +43,10 @@ single v t = Subst [(v, t)]
 
 -- Applies a substitution to a term.
 apply :: Subst -> Term -> Term
-apply (Subst []) t = t
+apply (Subst [])       t = t
 apply (Subst (x : xs)) (Var (VarName v))
   | VarName v == fst x = snd x
-  | otherwise = apply (Subst xs) (Var (VarName v))
+  | otherwise          = apply (Subst xs) (Var (VarName v))
 apply subst (Comb c ts) = Comb c (applyList subst ts)
   where
     -- Applies a substitution to all terms in a list.
@@ -57,30 +57,34 @@ apply subst (Comb c ts) = Comb c (applyList subst ts)
 
 -- Merges two substitutions.
 compose :: Subst -> Subst -> Subst
-compose (Subst list1) (Subst list2) 
-  = Subst (compList (substToList (restrictTo (Subst list1) (filterDupVars list1 list2))) list2) 
- where
-  -- Returns all variables from the first list that aren't in the second list.
-  filterDupVars :: [(VarName, Term)] -> [(VarName, Term)] -> [VarName]
-  filterDupVars l1 l2 
-    = filter (\elemL1 -> notElem elemL1 (map (\x -> fst x) l2)) 
-             (map (\x -> fst x) l1)
-  -- Applies all substitutions of the first list to all substitutions of the 
-  -- second list.
-  compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
-  compList []  xs2      = xs2
-  compList xs1 []       = xs1
-  compList xs1 (x2:xs2) = applySubst x2 xs1 : compList xs1 xs2
-  
-  -- Applies a substitution to a term of a one element substitution.
-  applySubst :: (VarName, Term) -> [(VarName, Term)] -> (VarName, Term)
-  applySubst s [] = s
-  applySubst (v, t) xs1 = (v, apply (Subst xs1) t)
-  
-  -- Returns only the list of a substitution.
-  substToList :: Subst -> [(VarName, Term)]
-  substToList (Subst xs) = xs
+compose (Subst list1) (Subst list2) =
+  Subst $ 
+    union 
+      (filter 
+        (\x -> notElem x (substToList (restrictTo (Subst list1) (filterDupVars list1 list2)))) 
+        ((compList list1 list2) ++ list1)) 
+      (compList list1 list2)
+  where
+    -- Returns all variables from the first list that aren't in the second list.
+    filterDupVars :: [(VarName, Term)] -> [(VarName, Term)] -> [VarName]
+    filterDupVars l1 l2 =
+      filter
+        (\elemL1 -> elem elemL1 (map (\x -> fst x) l2))
+        (map (\x -> fst x) l1)
+    -- Applies all substitutions of the first list to all substitutions of the
+    -- second list.
+    compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
+    compList []  xs2        = xs2
+    compList _   []         = []
+    compList xs1 (x2 : xs2) = (fst x2, apply (Subst xs1) (snd x2)) : compList xs1 xs2
 
+    -- Returns only the list of a substitution.
+    substToList :: Subst -> [(VarName, Term)]
+    substToList (Subst xs) = xs
+
+
+-- s1 = {A->C, }
+-- s2 = {A->B, }
 
 -- s8 = "{_ -> f, B -> g(g(f, f), _0), A -> _}"
 -- s9 = "{_ -> _0, _0 -> f, A -> g, X -> Y(_0)}"
