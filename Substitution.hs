@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Substitution 
-  ( domain 
+  ( Subst
+  , domain 
   , empty
   , single
   , apply
