@@ -29,8 +29,6 @@ domain (Subst xs) = map (\x -> fst x) $ filter isValid xs where
   -- Checks if a given variable is in a term.
   isValid :: (VarName, Term) -> Bool
   isValid (VarName v, Var (VarName v2)) = v /= v2
-  isValid (VarName v, Comb c (t:ts))    = isValid (VarName v, t) 
-                                          && isValid (VarName v, Comb c ts)
   isValid _                             = True
 
 -- An empty substitution.
@@ -82,24 +80,6 @@ compose (Subst list1) (Subst list2) =
     substToList :: Subst -> [(VarName, Term)]
     substToList (Subst xs) = xs
 
-
--- s1 = {A->C, }
--- s2 = {A->B, }
-
--- s8 = "{_ -> f, B -> g(g(f, f), _0), A -> _}"
--- s9 = "{_ -> _0, _0 -> f, A -> g, X -> Y(_0)}"
--- t0 = B       -> B
--- t1 = _0      -> f
--- t2 = _0, X   -> f, Y(f)
-
-{-
-s1 = y -> z
-s2 = x -> y
-apply(s2, x) = y
-apply(s1, apply(s2, x)) = z
-s1 + s2 = x -> z, y -> z
--}
-
 -- Resticts a substitution such that it's defined only on the given variables.
 restrictTo :: Subst -> [VarName] -> Subst
 restrictTo (Subst list) vs = Subst (filter (\x -> elem (fst x) vs) list)
@@ -136,13 +116,10 @@ instance Arbitrary Subst
   arbitrary = Subst <$> do 
     xs <- arbitrary
     return $ nubBy (\t0 t1 -> fst t0 == fst t1) 
-                   (filter (\x -> check (fst x) (snd x)) xs) 
-     where
-      -- Checks if a variable is in a term.
-      check :: VarName -> Term -> Bool
-      check v (Var v2) = v /= v2
-      check _ (Comb _ []) = True
-      check v (Comb c (y:ys)) = check v y && check v (Comb c ys)
+                   (filter (\x -> Var (fst x) /= (snd x)) xs) 
+
+
+--------------------------------- QUICKCHECK -----------------------------------
 
 
 -- Property: Apply empty doesn't change a term.
@@ -172,13 +149,7 @@ prop_domain_single_var v = domain (single v (Var v)) == []
 -- element.
 prop_domain_single_term :: VarName -> Term -> Property
 prop_domain_single_term v t = 
-  not (isVarInTerm v t) ==> domain (single v t) == [v] 
-
--- Checks if a given variable is in a given term.
-isVarInTerm :: VarName -> Term -> Bool
-isVarInTerm v (Var v2)        = v == v2
-isVarInTerm _ (Comb _ [])     = False
-isVarInTerm v (Comb c (x:xs)) = isVarInTerm v x || isVarInTerm v (Comb c xs)
+  t /= Var v ==> domain (single v t) == [v] 
 
 -- Property: Checks if the domain of two composed substitutions is equal or less
 -- to the domain of both substitution combined.
@@ -244,13 +215,10 @@ testAll = $quickCheckAll
 
 
 
+
+
+
 {-
-t6 = Var (VarName "B")
-s8 = Subst [(VarName "_",Comb "f" []),(VarName "B",Comb "g" [Comb "g" [Comb "f" [],Comb "f" []],Var (VarName "_0")]),(VarName "A",Var (VarName "_"))]
-s9 = Subst [(VarName "_",Var (VarName "_0")),(VarName "_0",Comb "f" []),(VarName "A",Comb "g" [])]
-
-
-
 --------------------------------------------------------------------------------
 -- Tests:
 d0 = domain (Subst [(VarName "1", Var (VarName "2")), (VarName "1", Var (VarName "2")), (VarName "1", Comb "[]" [])])
@@ -268,10 +236,14 @@ s6 = Subst [(VarName "_",Comb "f" [Var (VarName "A")]),
   (VarName "_0",Comb "g" []),
   (VarName "B",Var (VarName "_"))]
 s7 = Subst [(VarName "_0",Comb "f" []),(VarName "_",Var (VarName "A"))]
+s8 = Subst [(VarName "_",Comb "f" []),(VarName "B",Comb "g" [Comb "g" [Comb "f" [],Comb "f" []],Var (VarName "_0")]),(VarName "A",Var (VarName "_"))]
+s9 = Subst [(VarName "_",Var (VarName "_0")),(VarName "_0",Comb "f" []),(VarName "A",Comb "g" [])]
 
 
 t0 = Var (VarName "1")
 t1 = Comb "." [Var (VarName "1"), Comb "." [Comb "2" [], Comb "." [Comb "3" [], Var (VarName "1"), Comb "[]" []]]]
+t6 = Var (VarName "B")
+
 
 v0 = [VarName "1", VarName "2"]
 
