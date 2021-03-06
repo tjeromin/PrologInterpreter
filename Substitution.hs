@@ -116,12 +116,12 @@ instance Arbitrary Subst
  where 
   arbitrary = Subst <$> do 
     xs <- arbitrary
-    return $ nubBy (\t0 t1 -> fst t0 == fst t1) 
+    return $ nubBy (\t0 t1 -> fst t0 == fst t1) -- filter out {A -> B, A -> C} ?
                    (filter (\x -> Var (fst x) /= (snd x)) xs) 
 
 
 --------------------------------- QUICKCHECK -----------------------------------
-
+--change subset checks
 
 -- Property: Apply empty doesn't change a term.
 prop_apply_empty :: Term -> Bool
@@ -156,7 +156,7 @@ prop_domain_single_term v t =
 -- to the domain of both substitution combined.
 prop_domain_compose_combined :: Subst -> Subst -> Bool
 prop_domain_compose_combined s1 s2 = (length $ nub $ domain (compose s1 s2)) <=
-  (length $ nub (domain s1 ++ domain s2)) -- endlosschleife
+  (length $ nub (domain s1 ++ domain s2)) 
 
 -- Property: Checks if composed single substitutions which depicts in a cycle 
 -- are only defined on the first variable.

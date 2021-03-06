@@ -15,12 +15,22 @@ import Variables
 rename :: [VarName] -> Rule -> Rule
 rename xs (Rule t ts) 
   = Rule 
-      (head (rList xs (allVars $ Rule t ts) (t:ts))) 
-      (tail (rList xs (allVars $ Rule t ts) (t:ts))) 
+      (head (rList xs (allVars $ Rule t ts) $ rListAnonym xs (t:ts))) 
+      (tail (rList xs (allVars $ Rule t ts) $ rListAnonym xs (t:ts))) 
  where
   -- Checks if the given variable is not in the given list or rule.
   valid :: [VarName] -> VarName -> Bool
   valid fs v = notElem v fs && notElem v (allVars $ Rule t ts)
+
+  rListAnonym :: [VarName] -> [Term] -> [Term]
+  rListAnonym _  []       = []
+  rListAnonym fs (t1:ts1) = (snd $ rAnonym fs t1) : (rListAnonym ((fst $ rAnonym fs t1) ++ fs) (rListAnonym fs ts1))
+
+  rAnonym :: [VarName] -> Term -> ([VarName], Term)
+  rAnonym fs (Var (VarName v))
+    | head v == '_' = ([nextValid fs (VarName v)], Var $ nextValid fs (VarName v))
+    | otherwise     = ([], Var $ VarName v)
+  rAnonym fs (Comb c terms) = ([], Comb c $ rListAnonym fs terms)
 
   rList :: [VarName] -> [VarName] -> [Term] -> [Term]
   rList _  []     terms = terms 
@@ -82,4 +92,7 @@ testAll = $quickCheckAll
 
 l0 = [VarName "_1", VarName "A"]
 r0 = Rule (Comb "g" [Var (VarName "_"), Var (VarName "_")]) 
-     [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0")]]
+          [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0")]]
+
+r1 = Rule (Comb "g" [Var (VarName "_"), Var (VarName "_")]) 
+          [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0")]]
