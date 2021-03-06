@@ -15,8 +15,8 @@ import Variables
 rename :: [VarName] -> Rule -> Rule
 rename xs (Rule t ts) 
   = Rule 
-      (head (rList xs (allVars $ Rule t ts) $ rListAnonym xs (t:ts))) 
-      (tail (rList xs (allVars $ Rule t ts) $ rListAnonym xs (t:ts))) 
+      (head (rList xs (allVars $ Rule t ts) (t:ts))) 
+      (tail (rList xs (allVars $ Rule t ts) (t:ts))) 
  where
   -- Checks if the given variable is not in the given list or rule.
   valid :: [VarName] -> VarName -> Bool
@@ -31,6 +31,22 @@ rename xs (Rule t ts)
     | head v == '_' = ([nextValid fs (VarName v)], Var $ nextValid fs (VarName v))
     | otherwise     = ([], Var $ VarName v)
   rAnonym fs (Comb c terms) = ([], Comb c $ rListAnonym fs terms)
+
+  r :: [VarName] -> [Term] -> [Term]
+  r fs terms 
+    | fst (f fs terms) == VarName "" = terms
+    | otherwise                      = r (fst (f fs terms) : fs) (snd (f fs terms))
+
+  f :: [VarName] -> [Term] -> (VarName, [Term])
+  f _  []                        = (VarName "", [])
+  f fs (y:ys) 
+    | fst (g fs y) == VarName "" = f fs ys 
+    | otherwise                  = (fst (g fs y), (snd (g fs y)) : ys)
+
+  g :: [VarName] -> Term -> (VarName, Term)
+  g fs (Var (VarName "_")) = (nextValid fs (VarName "_"), Var $ nextValid fs (VarName "_"))
+  g fs (Var v)             = (VarName "", Var v)
+  g fs (Comb c terms)      = (fst (f fs terms), Comb c (snd (f fs terms)))
 
   rList :: [VarName] -> [VarName] -> [Term] -> [Term]
   rList _  []     terms = terms 
@@ -94,5 +110,5 @@ l0 = [VarName "_1", VarName "A"]
 r0 = Rule (Comb "g" [Var (VarName "_"), Var (VarName "_")]) 
           [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0")]]
 
-r1 = Rule (Comb "g" [Var (VarName "_"), Var (VarName "_")]) 
+r1 = Rule (Comb "g" [Var (VarName "_"), Comb "g" [Var (VarName "_"), Var (VarName "_")], Var (VarName "_")]) 
           [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0")]]
