@@ -16,8 +16,8 @@ import Variables
 rename :: [VarName] -> Rule -> Rule
 rename xs (Rule t ts) 
   = Rule 
-      (head (check_ xs (concatMap allVars $ rList xs (allVars $ Rule t ts) (t:ts)) $ rList xs (allVars $ Rule t ts) (t:ts)))
-      (tail (check_ xs (concatMap allVars $ rList xs (allVars $ Rule t ts) (t:ts)) $ rList xs (allVars $ Rule t ts) (t:ts))) 
+      (head (check_ (xs ++ (concatMap allVars $ rList xs (allVars $ Rule t ts) (t:ts))) $ rList xs (filter (\x -> x /= VarName "_") (allVars $ Rule t ts)) (t:ts)))
+      (tail (check_ (xs ++ (concatMap allVars $ rList xs (allVars $ Rule t ts) (t:ts))) $ rList xs (filter (\x -> x /= VarName "_") (allVars $ Rule t ts)) (t:ts))) 
  where
   -- Checks if the given variable is not in the given list or rule.
   valid :: [VarName] -> VarName -> Bool
@@ -36,10 +36,10 @@ rename xs (Rule t ts)
   rVar fs v (Comb c terms) = Comb c (map (rVar fs v) terms)
 
   -- Checks if a list of terms contains duplicate variables that begin with '_'.
-  check_ :: [VarName] -> [VarName] -> [Term] -> [Term]
-  check_ fs vs terms 
-    | getDupAnonym vs terms /= [] = check_ fs vs (rList_ fs (head $ getDupAnonym vs terms) terms)
-    | otherwise                   = terms
+  check_ :: [VarName] -> [Term] -> [Term]
+  check_ fs terms 
+    | contains_ terms = check_ (nextValid fs (VarName "_") : fs) (rList_ fs (VarName "_") terms)
+    | otherwise       = terms
 
   -- Renames one occurence of the given variable in the given list.
   rList_ :: [VarName] -> VarName -> [Term] -> [Term]
@@ -56,7 +56,6 @@ rename xs (Rule t ts)
   -- Renames the given variable such that the new name is valid.
   nextValid :: [VarName] -> VarName -> VarName
   nextValid fs (VarName v) 
-    | v == "_"      = VarName "_"
     | length v == 1 = if valid fs (VarName (v ++ "0"))
                         then VarName (v ++ "0") 
                         else nextValid fs (VarName (v ++ "0"))
@@ -67,6 +66,9 @@ rename xs (Rule t ts)
   -- Increments a variable name by one.
   countUp :: String -> String
   countUp v = show $ (+1) (read [v !! 1] :: Int)
+
+contains_ :: [Term] -> Bool
+contains_ terms = elem (VarName "_") $ concatMap allVars terms
 
 -- Returns a list with all duplicate variables that begin with '_' in all terms 
 -- of the given list.
@@ -121,7 +123,7 @@ ts0 = [Comb "g" [Var (VarName "_2"),Var (VarName "_2")],
       Comb "g" [Var (VarName "A0"),Var (VarName "B0"),Var (VarName "_3")]]
 
 r1 = Rule (Comb "g" [Var (VarName "_"), Comb "g" [Var (VarName "_"), Var (VarName "_")], Var (VarName "_")]) 
-          [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0")]]
+          [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0"), Var (VarName "_0")]]
 
 -- (Comb "g" [Var (VarName "_"), Comb "g" [Var (VarName "_"), Var (VarName "_")], Var (VarName "_")])
 

@@ -20,6 +20,7 @@ import Type
 import Pretty
 import Variables
 
+
 -- Data type to represent substitutions in prolog.
 data Subst = Subst [(VarName, Term)]
   deriving Show
