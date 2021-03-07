@@ -155,8 +155,8 @@ prop_domain_single_term v t =
 -- Property: Checks if the domain of two composed substitutions is equal or less
 -- to the domain of both substitution combined.
 prop_domain_compose_combined :: Subst -> Subst -> Bool
-prop_domain_compose_combined s1 s2 = (length $ nub $ domain (compose s1 s2)) <=
-  (length $ nub (domain s1 ++ domain s2)) 
+prop_domain_compose_combined s1 s2 
+  = isSubsetOf (domain $ compose s1 s2) (union (domain s1) (domain s2))
 
 -- Property: Checks if composed single substitutions which depicts in a cycle 
 -- are only defined on the first variable.
@@ -182,8 +182,8 @@ prop_allVars_term v t = t /= Var v
 -- Property: allVars of composed substitutions is a subset of allVars of the two 
 -- combined substitutions.
 prop_allVars_compose_subset :: Subst -> Subst -> Bool
-prop_allVars_compose_subset s1 s2 = (length $ nub $ allVars (compose s1 s2)) <=
-  (length $ nub (allVars s1 ++ allVars s2))
+prop_allVars_compose_subset s1 s2 
+  = isSubsetOf (allVars $ compose s1 s2) (union (allVars s1) (allVars s2))
 
 -- Property: allVars of two composed single substitutions which variables 
 -- depicts on themselfes are these two variables.
@@ -193,7 +193,7 @@ prop_allVars_compose_single v1 v2 = v1 /= v2
 
 -- Property: domain is a subset of allVars of the same substitution.
 prop_domain_allVars :: Subst -> Bool
-prop_domain_allVars s = (length $ nub $ domain s) <= (length $ nub $ allVars s)
+prop_domain_allVars s = isSubsetOf (domain s) (allVars s)
 
 -- Property: domain of a restricted empty substitution is {} for every term.
 prop_restrictTo_empty :: [VarName] -> Bool
@@ -202,8 +202,11 @@ prop_restrictTo_empty xs = (domain $ restrictTo empty xs) == []
 -- Property: domain of every restricted substitution is a subset of the given
 -- variables for the restriction.
 prop_restrictTo_subset :: [VarName] -> Subst -> Bool
-prop_restrictTo_subset xs s = (length $ nub $ domain $ restrictTo s xs) 
-  <= (length $ nub xs)
+prop_restrictTo_subset xs s = isSubsetOf (domain $ restrictTo s xs) xs
+
+-- Checks if the first list is a subset of the second one.
+isSubsetOf :: [VarName] -> [VarName] -> Bool
+isSubsetOf list1 list2 = foldr (&&) True (map (\x -> elem x list2) list1)
 
 -- Check all properties in this module:
 return []
