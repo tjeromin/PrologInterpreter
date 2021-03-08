@@ -50,6 +50,18 @@ compply :: Subst -> Maybe (Term, Term) -> Subst
 compply s1 (Just (Var v, w)) = (compose s1 (single v w))
 compply s1 (Just (v, Var w)) = (compose s1 (single w v))
 
+apply_ds_id :: Term -> Bool
+apply_ds_id t = isNothing (ds t t)
+
+apply_ds_diff :: Term -> Term -> Property
+apply_ds_diff t1 t2 = isJust (ds t1 t2) ==> t1 /= t2
+
+apply_unify_ds :: Term -> Term -> Property
+apply_unify_ds t1 t2 = isNothing (ds t1 t2) ==> isJust (unify t2 t2) && (fmap domain (unify t1 t2) == Just [])
+
+apply_unify :: Term -> Term -> Property
+apply_unify t1 t2 = isJust (unify t1 t2) ==> isNothing (ds (apply (unify t1 t2) t1) (apply (unify t1 t2) t2))
+
 t1 = Comb "ehemann" [Comb "monika" [], Var (VarName "M")]
 
 t2 = Comb "ehemann" [Var (VarName "F"), Comb "herbert" []]
