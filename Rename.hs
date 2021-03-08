@@ -129,9 +129,3 @@ r1 = Rule (Comb "g" [Var (VarName "_"), Comb "g" [Var (VarName "_"), Var (VarNam
 
 -- (Comb "g" [Var (VarName "_1"), Comb "g" [Var (VarName "_1"), Var (VarName "_1")], Var (VarName "_1")])
 
--- check duplicates of _
--- if list empty return [term]
--- [VarName "_1"]
-
--- 
-

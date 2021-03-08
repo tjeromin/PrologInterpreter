@@ -55,7 +55,7 @@ apply subst (Comb c ts) = Comb c (applyList subst ts)
     applyList s (x : xs) = apply s x : applyList s xs
 
 
--- Merges two substitutions.
+-- .
 compose :: Subst -> Subst -> Subst
 compose (Subst list1) (Subst list2) =
   Subst $ 
@@ -71,6 +71,7 @@ compose (Subst list1) (Subst list2) =
       filter
         (\elemL1 -> elem elemL1 (map (\x -> fst x) l2))
         (map (\x -> fst x) l1)
+
     -- Applies all substitutions of the first list to all substitutions of the
     -- second list.
     compList :: [(VarName, Term)] -> [(VarName, Term)] -> [(VarName, Term)]
@@ -82,7 +83,7 @@ compose (Subst list1) (Subst list2) =
     substToList :: Subst -> [(VarName, Term)]
     substToList (Subst xs) = xs
 
--- Resticts a substitution such that it's defined only on the given variables.
+-- Restricts a substitution such that it's defined only on the given variables.
 restrictTo :: Subst -> [VarName] -> Subst
 restrictTo (Subst list) vs = Subst (filter (\x -> elem (fst x) vs) list)
 
@@ -122,7 +123,7 @@ instance Arbitrary Subst
 
 
 --------------------------------- QUICKCHECK -----------------------------------
---change subset checks
+
 
 -- Property: Apply empty doesn't change a term.
 prop_apply_empty :: Term -> Bool

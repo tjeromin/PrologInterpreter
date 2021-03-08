@@ -1,3 +1,3 @@
 
 
-data SLDTree = SLDTree Subst Term [SLDTree]
+data SLDTree = SLDTree Goal [(Subst, SLDTree)]
