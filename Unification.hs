@@ -43,7 +43,7 @@ unify term1 term2 = unifyFull term1 term2 empty
           if (elem w (allVars v))
             then Nothing
             else unifyFull (apply (compply s (ds t1 t2)) t1) (apply (compply s (ds t1 t2)) t2) (compply s (ds t1 t2))
-        (Just (Comb _ _, Comb _ _)) -> Nothing
+        -- (Just (Comb _ _, Comb _ _)) -> Nothing
         _ -> Nothing
 
 compply :: Subst -> Maybe (Term, Term) -> Subst
