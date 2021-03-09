@@ -1,13 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Rename 
   ( rename
-  , testAll
+  , testAllRename
   ) where
 
 import Data.List
 
 import Test.QuickCheck
-import Data.List.Unique
 
 import Type
 import Variables
@@ -70,6 +69,7 @@ rename xs (Rule t ts)
 contains_ :: [Term] -> Bool
 contains_ terms = elem (VarName "_") $ concatMap allVars terms
 
+{-
 -- Returns a list with all duplicate variables that begin with '_' in all terms 
 -- of the given list.
 getDupAnonym :: [VarName] -> [Term] -> [VarName]
@@ -83,7 +83,7 @@ allVarsWDup :: Term -> [VarName]
 allVarsWDup (Var x)           = [x]
 allVarsWDup (Comb _ [])       = []
 allVarsWDup (Comb _ (y : ys)) = allVarsWDup y ++ concatMap allVarsWDup ys
-
+-}
 
 --------------------------------- QUICKCHECK -----------------------------------
 
@@ -108,13 +108,13 @@ prop_rename_ge_allVars xs r
 
 -- Check all properties in this module:
 return []
-testAll :: IO Bool
-testAll = $quickCheckAll
+testAllRename :: IO Bool
+testAllRename = $quickCheckAll
 
 
 
 
-
+{-
 l0 = [VarName "_1", VarName "A"]
 r0 = Rule (Comb "g" [Var (VarName "_"), Var (VarName "_")]) 
           [Var (VarName "_"),Comb "g" [Var (VarName "A"),Var (VarName "B"), Var (VarName "_0")]]
@@ -129,3 +129,4 @@ r1 = Rule (Comb "g" [Var (VarName "_"), Comb "g" [Var (VarName "_"), Var (VarNam
 
 -- (Comb "g" [Var (VarName "_1"), Comb "g" [Var (VarName "_1"), Var (VarName "_1")], Var (VarName "_1")])
 
+-}

@@ -118,7 +118,7 @@ instance Arbitrary Subst
  where 
   arbitrary = Subst <$> do 
     xs <- arbitrary
-    return $ nubBy (\t0 t1 -> fst t0 == fst t1) -- filter out {A -> B, A -> C} ?
+    return $ nubBy (\t0 t1 -> fst t0 == fst t1) 
                    (filter (\x -> Var (fst x) /= (snd x)) xs) 
 
 
