@@ -1,4 +1,4 @@
-module SLD 
+module SLDT
   ( SLDTree
   , Strategy
   , dfs
