@@ -13,6 +13,7 @@ loop strat prog path
   = do putStr "?- "
        input <- getLine
        case input of 
+         ""       -> loop strat prog path
          ":q"     -> putStrLn "Bye!"
          ":h"     -> do
                        putStrLn help
@@ -41,8 +42,18 @@ processInput input strat prog path
                                       loop strat prog path
                      (Right goal) -> do --putStrLn $ show goal
                                         --putStrLn $ show $ sld prog goal
-                                        putStrLn $ concatMap (\s -> pretty s ++ "\n") $ solveWith prog goal strat 
+                                        sltns <- return $ solveWith prog goal strat 
+                                        displaySolutions sltns
                                         loop strat prog path
+
+displaySolutions :: [Subst] -> IO ()
+displaySolutions [] = putStrLn "No Solutions."
+displaySolutions (x:xs) 
+  = do putStr (pretty x ++ " ")
+       input <- getLine
+       case input of
+         ";" -> do displaySolutions xs
+         _   -> putStrLn ""
 
 help :: String
 help 
