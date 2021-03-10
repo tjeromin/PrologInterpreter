@@ -18,7 +18,7 @@ import Rename
 data SLDTree = SLDTree Goal [(Subst, SLDTree)]
   deriving Show
 
-
+{-
 -- Construct the SLD tree for a given program and goal
 sld :: Strategy -> Prog -> Goal -> SLDTree
 sld strat p g = build empty g
@@ -56,9 +56,9 @@ bfs t = bfs' [(empty, t)]
 -- Solve a given goal with respect to a given program using a given strategy
 solveWith :: Prog -> Goal -> Strategy -> [Subst]
 solveWith p g strat = map (`restrictTo` allVars g) (strat (sld strat p g))
+-}
 
 
-{-
 -- Represents a search strategy for looking for solutions in a SLD-Tree.
 type Strategy = SLDTree -> [Subst]
 
@@ -87,12 +87,14 @@ goalList (Prog (x : xs)) vs t =
 
 -- Looks for solutions with depth-first search.
 dfs :: Strategy
-dfs (SLDTree _ []) = []
-dfs (SLDTree _ (x:xs)) = 
-  case x of 
-    (s, SLDTree (Goal []) _) -> s : concatMap dfs (map snd xs) 
-    (s, tree)                -> dfs (applyToSLD s tree) ++ concatMap dfs (map snd xs)
-
+dfs (SLDTree g []) = []
+dfs tree = dfs' empty tree
+ where 
+  dfs' :: Subst -> SLDTree -> [Subst]
+  dfs' subst (SLDTree (Goal []) [])  = [subst]
+  dfs' _     (SLDTree _ [])          = []
+  dfs' subst (SLDTree _ ((s, t):xs)) = dfs' (compose s subst) t ++ concatMap (\(s2, t2) -> dfs' (compose s2 subst) t2) xs
+  
 -- Looks for solutions with breadth-first search.
 bfs :: Strategy
 bfs (SLDTree _ slds) = fst (searchLvl slds) ++ concatMap bfs (snd (searchLvl slds))
@@ -114,7 +116,7 @@ solveWith p g strat
     (\subst -> restrictTo subst (allVars g)) --filter (\var -> var /= VarName "_") $ 
     (strat (sld p g))
 
--}
+
 vars1 = allVars p1 ++ allVars goal1
 
 goal1 = Goal [(Comb "vorfahre" [Var (VarName "X"), Var (VarName "Y")])]
