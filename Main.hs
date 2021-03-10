@@ -2,43 +2,47 @@ module Main where
 
 import Type
 import Parser
+import Substitution
 import SLD
 
 main :: IO ()
-main = loop dfs (Prog [])
+main = loop dfs (Prog []) ":l \\"
   
-loop :: Strategy -> Prog -> IO ()
-loop strat prog
+loop :: Strategy -> Prog -> FilePath -> IO ()
+loop strat prog path
   = do putStr "?- "
        input <- getLine
        case input of 
          ":q"     -> putStrLn "Bye!"
          ":h"     -> do
                        putStrLn help
-                       loop strat prog
+                       loop strat prog path
          ":s dfs" -> do
                        putStrLn "Strategy set to depth-first search."
-                       loop dfs prog
+                       loop dfs prog path
          ":s bfs" -> do
                        putStrLn "Strategy set to breadth-first search."
-                       loop bfs prog
-         _        -> processInput input prog
+                       loop bfs prog path
+         _        -> processInput input strat prog path
 
-processInput :: String -> Prog -> IO ()
-processInput input prog
+processInput :: String -> Strategy -> Prog -> FilePath -> IO ()
+processInput input strat prog path
   | take 3 input == ":l " = do 
                               e <- (parseFile (drop 3 input))
-                              f e prog
-  | otherwise = loop bfs prog
-
-f :: Either String Prog -> Prog -> IO ()
-f (Left err) prog
-  = do putStrLn err 
-       loop dfs prog
-f (Right prog) _
-  = do putStrLn "file" 
-       loop dfs prog
-      
+                              case e of
+                                (Left err)      -> do putStrLn err 
+                                                      loop strat prog path
+                                (Right newProg) -> do putStrLn $ "Loaded " ++ (drop 3 input)
+                                                      loop strat newProg input
+  | input == ":r" = do putStrLn "Try loading last file..."
+                       processInput path strat prog path
+  | otherwise = do case parse input of
+                     (Left err) -> do putStrLn err
+                                      loop strat prog path
+                     (Right goal) -> do --putStrLn $ show goal
+                                        --putStrLn $ show $ sld prog goal
+                                        putStrLn $ concatMap (\s -> pretty s ++ "\n") $ solveWith prog goal strat 
+                                        loop strat prog path
 
 help :: String
 help 

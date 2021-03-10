@@ -55,16 +55,28 @@ rename xs (Rule t ts)
   -- Renames the given variable such that the new name is valid.
   nextValid :: [VarName] -> VarName -> VarName
   nextValid fs (VarName v) 
+    | v == "_"      = if valid fs (VarName "A")
+                        then VarName "A" 
+                        else nextValid fs (VarName "A")
     | length v == 1 = if valid fs (VarName (v ++ "0"))
                         then VarName (v ++ "0") 
                         else nextValid fs (VarName (v ++ "0"))
-    | otherwise     = if valid fs (VarName ((v !! 0) : (countUp v)))
-                        then VarName ((v !! 0) : (countUp v))
-                        else nextValid fs (VarName ((v !! 0) : (countUp v)))
-  
+    | otherwise     = if valid fs (VarName $ countVarUp v)
+                        then VarName (countVarUp v)
+                        else nextValid fs (VarName (countVarUp v))
+
+  countVarUp :: String -> String
+  countVarUp s = take ((length s) - (length $ getLastNum s)) s ++ countNumUp (getLastNum s)
+
+  getLastNum :: String -> String
+  getLastNum s 
+    | elem (last s) ['0' .. '9'] = getLastNum (init s) ++ [last s]
+    | otherwise                  = ""
+
   -- Increments a variable name by one.
-  countUp :: String -> String
-  countUp v = show $ (+1) (read [v !! 1] :: Int)
+  countNumUp :: String -> String
+  countNumUp ""  = "0"
+  countNumUp num = show $ (+1) (read num :: Int)
 
 contains_ :: [Term] -> Bool
 contains_ terms = elem (VarName "_") $ concatMap allVars terms

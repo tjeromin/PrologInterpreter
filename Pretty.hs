@@ -25,7 +25,7 @@ prettyList e  l                   = pretty e ++ "|" ++ pretty l
 
 
 -- Tests:
-
+{-
 t0 = pretty (Var (VarName "A"))
 --"A"
 t1 = pretty (Comb "true" [])
@@ -56,3 +56,4 @@ t13 = pretty (Comb "." [Var (VarName "I"), Comb "true" [], Comb "j" [Var (VarNam
 -- ".(I, true, j(J))"
 t14 = pretty (Comb "." [Var (VarName "K"), Comb "." [Var (VarName "L"), Var (VarName "M"), Var (VarName "N"), Comb "[]" []]])
 -- "[K|.(L, M, N, [])]"
+-}

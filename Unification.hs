@@ -7,12 +7,12 @@ module Unification
   )
 where
 
-import           Data.List
-import           Data.Maybe
-import           Prelude
-import           Substitution
-import           Test.QuickCheck
-import           Type
+import Data.List
+import Data.Maybe
+import Prelude
+import Substitution
+import Test.QuickCheck
+import Type
 
 ds :: Term -> Term -> Maybe (Term, Term)
 ds (Var (VarName "_")) _ = Nothing
@@ -23,10 +23,14 @@ ds (Comb n1 xs) (Var t1) = Just (Comb n1 xs, Var t1)
 ds (Comb n1 xs) (Comb n2 ys) =
   if ((n1 /= n2) || (length xs) /= (length ys))
     then Just (Comb n1 xs, Comb n2 ys)
-    else
-      if ((xs \\ ys) == [])
-        then Nothing
-        else ds (head (xs \\ ys)) (head (ys \\ xs))
+    else dsList xs ys
+
+dsList :: [Term] -> [Term] -> Maybe (Term, Term)
+dsList (x:xs) (y:ys) = 
+  case ds x y of
+    Nothing -> dsList xs ys
+    dsXY    -> dsXY
+dsList _      _      = Nothing
 
 unify :: Term -> Term -> Maybe Subst
 unify term1 term2 = unifyFull term1 term2 empty
@@ -35,21 +39,19 @@ unify term1 term2 = unifyFull term1 term2 empty
     unifyFull t1 t2 s
       | ds t1 t2 == Nothing = Just s
       | otherwise = case ds t1 t2 of
-        (Just (Var v, w)) ->
-          if (elem v (allVars w))
+        (Just (Var v, term)) ->
+          if (elem v (allVars term))
             then Nothing
-            else unifyFull (apply (compply s (ds t1 t2)) t1) (apply (compply s (ds t1 t2)) t2) (compply s (ds t1 t2))
-        (Just (v, Var w)) ->
-          if (elem w (allVars v))
+            else unifyFull (apply (compose (single v term) s) t1) (apply (compose (single v term) s) t2) (compose (single v term) s)
+        (Just (term, Var v)) ->
+          if (elem v (allVars term))
             then Nothing
-            else unifyFull (apply (compply s (ds t1 t2)) t1) (apply (compply s (ds t1 t2)) t2) (compply s (ds t1 t2))
-        -- (Just (Comb _ _, Comb _ _)) -> Nothing
+            else unifyFull (apply (compose (single v term) s) t1) (apply (compose (single v term) s) t2) (compose (single v term) s)
         _ -> Nothing
 
-compply :: Subst -> Maybe (Term, Term) -> Subst
-compply s1 (Just (Var v, w)) = (compose (single v w) s1)
-compply s1 (Just (v, Var w)) = (compose (single w v) s1)
-compply _ _                  = empty
+
+--------------------------------- QUICKCHECK -----------------------------------
+
 
 prop_apply_ds_id :: Term -> Bool
 prop_apply_ds_id t = isNothing (ds t t)

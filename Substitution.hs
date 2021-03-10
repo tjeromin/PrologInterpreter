@@ -9,7 +9,7 @@ module Substitution
   , restrictTo
   , pretty
   , allVars
-  , testAll
+  , testAllSubst
   ) where
 
 import Data.List
@@ -212,8 +212,8 @@ isSubsetOf list1 list2 = foldr (&&) True (map (\x -> elem x list2) list1)
 
 -- Check all properties in this module:
 return []
-testAll :: IO Bool
-testAll = $quickCheckAll
+testAllSubst :: IO Bool
+testAllSubst = $quickCheckAll
 
 
 
