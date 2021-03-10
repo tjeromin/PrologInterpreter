@@ -22,7 +22,7 @@ sld :: Prog -> Goal -> SLDTree
 sld prog (Goal gs) = sld' prog (Goal gs) (allVars prog ++ allVars (Goal gs))
   where
     sld' :: Prog -> Goal -> [VarName] -> SLDTree
-    sld' prog (Goal gs) xs = SLDTree (Goal gs) $ map (\(s, g) -> (s, (sld prog g))) (concatMap (goalList prog xs) gs)
+    sld' prog (Goal gs) xs = SLDTree (Goal gs) $ map (\(s, g) -> (s, (sld' prog g (xs ++ allVars g)))) (concatMap (goalList prog xs) gs)
 
 unifyCheck :: Rule -> Term -> Maybe (Subst, [Term])
 unifyCheck (Rule r rs) t = case (unify r t) of
