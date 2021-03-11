@@ -42,8 +42,7 @@ processInput input strat prog path
                                       loop strat prog path
                      (Right goal) -> do --putStrLn $ show goal
                                         --putStrLn $ show $ sld prog goal
-                                        sltns <- return $ solveWith prog goal strat 
-                                        displaySolutions sltns
+                                        displaySolutions $ solveWith prog goal strat                                          
                                         loop strat prog path
 
 displaySolutions :: [Subst] -> IO ()
