@@ -13,11 +13,13 @@ instance Pretty Term where
   pretty (Comb name []) = name 
   pretty (Comb name ts) = name ++ "(" ++ prettyComb ts ++ ")"
    where    
+    -- Prints each term of a given list separated by ",".
     prettyComb :: [Term] -> String
     prettyComb []     = ""
     prettyComb (x:[]) = pretty x 
     prettyComb (x:xs) = pretty x ++ ", " ++ prettyComb xs
 
+-- Prints a prolog list ".(e, l)".
 prettyList :: Term -> Term -> String
 prettyList e  (Comb "[]" [])      = pretty e
 prettyList e1 (Comb "." [e2, l2]) = pretty e1 ++ ", " ++ prettyList e2 l2

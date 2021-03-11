@@ -37,7 +37,7 @@ domain (Subst xs) = map (\x -> fst x) $ filter isValid xs where
 empty :: Subst
 empty = Subst []
 
--- Creates a substitution with one element from a variable and a term.
+-- Creates a substitution with one element from a given variable and term.
 single :: VarName -> Term -> Subst
 single v t = Subst [(v, t)]
 
@@ -55,7 +55,7 @@ apply subst (Comb c ts) = Comb c (applyList subst ts)
     applyList s (x : xs) = apply s x : applyList s xs
 
 
--- .
+-- Composes two substitutions into one. Order is important.
 compose :: Subst -> Subst -> Subst
 compose (Subst list1) (Subst list2) =
   Subst $ 

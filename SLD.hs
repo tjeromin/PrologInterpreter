@@ -51,14 +51,19 @@ dfs tree = dfs' empty tree
   dfs' :: Subst -> SLDTree -> [Subst]
   dfs' subst (SLDTree (Goal []) [])  = [subst]
   dfs' _     (SLDTree _ [])          = []
-  dfs' subst (SLDTree _ ((s, t):xs)) = dfs' (compose s subst) t ++ concatMap (\(s2, t2) -> dfs' (compose s2 subst) t2) xs
+  dfs' subst (SLDTree _ ((s, t):ts)) = dfs' (compose s subst) t ++ concatMap (\(s2, t2) -> dfs' (compose s2 subst) t2) ts
   
 -- Looks for solutions with breadth-first search.
 bfs :: Strategy
-bfs (SLDTree _ slds) = 
+bfs tree = bfs' [(empty, tree)]
+ where
+  bfs' :: [(Subst, SLDTree)] -> [Subst]
+  bfs' []                                = []
+  bfs' ((s, (SLDTree (Goal []) _)) : ts) = [s] ++ bfs' ts
+  bfs' ((s, (SLDTree _ ts2)) : ts)       = bfs' (ts ++ map (\(s2, t2) -> (compose s2 s, t2)) ts2)
 
-applyToSLD :: Subst -> SLDTree -> SLDTree
-applyToSLD subst (SLDTree g xs) = SLDTree g $ map (\(s, t) -> (compose s subst, t)) xs
+--applyToSLD :: Subst -> SLDTree -> SLDTree
+--applyToSLD subst (SLDTree g xs) = SLDTree g $ map (\(s, t) -> (compose s subst, t)) xs
 
 -- Lists all solutions for a given program and goal.
 solveWith :: Prog -> Goal -> Strategy -> [Subst]

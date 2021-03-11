@@ -5,9 +5,11 @@ import Parser
 import Substitution
 import SLD
 
+-- Entry point of the program. Starts the io loop.
 main :: IO ()
-main = loop dfs (Prog []) ":l \\"
+main = putStrLn "Welcome.\nType \":h\" for help." >> loop dfs (Prog []) ":l \\"
   
+-- IO loop. Calls itself until ":q" is entered.
 loop :: Strategy -> Prog -> FilePath -> IO ()
 loop strat prog path
   = do putStr "?- "
@@ -26,6 +28,8 @@ loop strat prog path
                        loop bfs prog path
          _        -> processInput input strat prog path
 
+-- Process input if it isn't one of ":h", ":s", ":q".
+-- Reads file and goals.
 processInput :: String -> Strategy -> Prog -> FilePath -> IO ()
 processInput input strat prog path
   | take 3 input == ":l " = do 
@@ -45,6 +49,7 @@ processInput input strat prog path
                                         displaySolutions $ solveWith prog goal strat                                          
                                         loop strat prog path
 
+-- Displays one solution after another from a list of solutions.
 displaySolutions :: [Subst] -> IO ()
 displaySolutions [] = putStrLn "No Solutions."
 displaySolutions (x:xs) 
@@ -54,6 +59,7 @@ displaySolutions (x:xs)
          ";" -> do displaySolutions xs
          _   -> putStrLn ""
 
+-- Returns the help string.
 help :: String
 help 
   = "Commands available from the prompt:\n" ++

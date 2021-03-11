@@ -11,7 +11,8 @@ import Test.QuickCheck
 import Type
 import Variables
 
-
+-- Renames all Variables in a rule such that no variable of the given list and 
+-- the given rule is part of the new rule.
 rename :: [VarName] -> Rule -> Rule
 rename xs (Rule t ts) 
   = Rule 
@@ -65,19 +66,23 @@ rename xs (Rule t ts)
                         then VarName (countVarUp v)
                         else nextValid fs (VarName (countVarUp v))
 
+  -- Increments the number at the end of a string.
+  -- If there's no number it appends "0".
   countVarUp :: String -> String
   countVarUp s = take ((length s) - (length $ getLastNum s)) s ++ countNumUp (getLastNum s)
 
+  -- Returns the number at the end of a string.
   getLastNum :: String -> String
   getLastNum s 
     | elem (last s) ['0' .. '9'] = getLastNum (init s) ++ [last s]
     | otherwise                  = ""
 
-  -- Increments a variable name by one.
+  -- Increments a number as a string.
   countNumUp :: String -> String
   countNumUp ""  = "0"
   countNumUp num = show $ (+1) (read num :: Int)
 
+-- Checks if the list of terms contains a variable with name "_".
 contains_ :: [Term] -> Bool
 contains_ terms = elem (VarName "_") $ concatMap allVars terms
 
@@ -100,20 +105,27 @@ allVarsWDup (Comb _ (y : ys)) = allVarsWDup y ++ concatMap allVarsWDup ys
 --------------------------------- QUICKCHECK -----------------------------------
 
 
+-- Property: No variable of the new rule is part of the old rule.
 prop_rename_intersect_allVars :: [VarName] -> Rule -> Bool
 prop_rename_intersect_allVars xs r 
   = intersect (allVars (rename xs r)) (allVars r) == [] 
 
+-- Property: No variable of the new rule is part of the given list.
 prop_rename_intersect_list :: [VarName] -> Rule -> Bool
 prop_rename_intersect_list xs r = intersect (allVars (rename xs r)) xs == []
 
+-- Property: No variable of the new rule is named "_".
 prop_rename_anonymous :: [VarName] -> Rule -> Bool
 prop_rename_anonymous xs r = notElem (VarName "_") (allVars $ rename xs r)
 
+-- Property: The quantity of variables is the same in new and old rule if the 
+-- old rule doesn't contain "_".
 prop_rename_eq_allVars :: [VarName] -> Rule -> Property
 prop_rename_eq_allVars xs r = notElem (VarName "_") (allVars r) 
   ==> length (allVars $ rename xs r) == length (allVars r)
 
+-- Property: The quantity of variables is the same or greater in new rule than 
+-- in the old rule if the old rule.
 prop_rename_ge_allVars :: [VarName] -> Rule -> Bool
 prop_rename_ge_allVars xs r 
   = length (allVars $ rename xs r) >= length (allVars r)
