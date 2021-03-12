@@ -56,14 +56,16 @@ displaySolutions (x:xs)
   = do putStr (pretty x ++ " ")
        input <- getLine
        case input of
-         ";" -> do displaySolutions xs
-         _   -> putStrLn ""
+         "."   -> putStrLn ""
+         _     -> do displaySolutions xs
 
 -- Returns the help string.
 help :: String
 help 
   = "Commands available from the prompt:\n" ++
     "  <goal>      Solves/proves the specified goal.\n" ++
+    "              Press enter to display another solution.\n" ++
+    "              Press \".\" to stop displaying solutions.\n" ++
     "  :h          Shows this help message.\n" ++
     "  :l <file>   Loads the specified file.\n" ++
     "  :q          Exits the interactive environment.\n" ++

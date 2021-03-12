@@ -31,7 +31,7 @@ sld' prog goal vs = SLDTree goal (map (\(s, g) -> (s, (sld' prog g (union vs $ a
 
 --returns list of new goals (with Substitution) derived from prog for multible goals.
 newGoals :: Prog -> Goal -> [VarName] -> [(Subst, Goal)]
-newGoals _ (Goal []) _ = []
+newGoals _    (Goal [])       _  = []
 newGoals prog (Goal (t : ts)) vs = map (\(s, Goal newTerms) -> (s, Goal (newTerms ++ map (apply s) ts))) (goalList prog vs t)
 
 --checks if a given rule can be applied on a given term. If so, it returns a Maybe tuple with the substitution computed by unify and the list of "rule-terms".
@@ -43,8 +43,8 @@ unifyCheck (Rule t ts) term =
 
 --returns a list with tuples that carry all the substitution and new goals derived from all rules that are appliable on the given term.
 goalList :: Prog -> [VarName] -> Term -> [(Subst, Goal)]
-goalList (Prog []) _ _ = []
-goalList (Prog (x : xs)) vs t =
+goalList (Prog [])       _  _ = []
+goalList (Prog (x : xs)) vs t = 
   case unifyCheck (rename vs x) t of
     (Nothing)    -> goalList (Prog xs) vs t
     Just (s, ys) -> [(s, Goal ys)] ++ goalList (Prog xs) vs t
@@ -53,25 +53,22 @@ goalList (Prog (x : xs)) vs t =
 dfs :: Strategy
 dfs (SLDTree _ []) = []
 dfs tree = dfs' empty tree
-  where
-    dfs' :: Subst -> SLDTree -> [Subst]
-    dfs' subst (SLDTree (Goal []) []) = [subst]
-    dfs' _ (SLDTree _ []) = []
-    dfs' subst (SLDTree _ ((s, t) : ts)) = dfs' (compose s subst) t ++ concatMap (\(s2, t2) -> dfs' (compose s2 subst) t2) ts
-
+ where 
+  dfs' :: Subst -> SLDTree -> [Subst]
+  dfs' subst (SLDTree (Goal []) [])  = [subst]
+  dfs' _     (SLDTree _ [])          = []
+  dfs' subst (SLDTree _ ((s, t):ts)) = dfs' (compose s subst) t ++ concatMap (\(s2, t2) -> dfs' (compose s2 subst) t2) ts
+  
 -- Looks for solutions with breadth-first search.
 bfs :: Strategy
 bfs tree = bfs' [(empty, tree)]
-  where
-    bfs' :: [(Subst, SLDTree)] -> [Subst]
-    bfs' [] = []
-    bfs' ((s, (SLDTree (Goal []) _)) : ts) = [s] ++ bfs' ts
-    bfs' ((s, (SLDTree _ ts2)) : ts) = bfs' (ts ++ map (\(s2, t2) -> (compose s2 s, t2)) ts2)
+ where
+  bfs' :: [(Subst, SLDTree)] -> [Subst]
+  bfs' []                                = []
+  bfs' ((s, (SLDTree (Goal []) _)) : ts) = [s] ++ bfs' ts
+  bfs' ((s, (SLDTree _ ts2)) : ts)       = bfs' (ts ++ map (\(s2, t2) -> (compose s2 s, t2)) ts2)
 
---applyToSLD :: Subst -> SLDTree -> SLDTree
---applyToSLD subst (SLDTree g xs) = SLDTree g $ map (\(s, t) -> (compose s subst, t)) xs
-
--- Lists all solutions for a given program and goal.
+-- Lists all solutions for a given program, strategy and goal.
 solveWith :: Prog -> Goal -> Strategy -> [Subst]
 solveWith p g strat =
   map
