@@ -35,7 +35,8 @@ rename xs (Rule t ts)
     | otherwise = Var v2
   rVar fs v (Comb c terms) = Comb c (map (rVar fs v) terms)
 
-  -- Checks if a list of terms contains duplicate variables that begin with '_'.
+  -- Checks if a list of terms contains a variable "_" and renames every occurence
+  -- to a different new name.
   check_ :: [VarName] -> [Term] -> [Term]
   check_ fs terms 
     | contains_ terms = check_ (nextValid fs (VarName "_") : fs) (rList_ fs (VarName "_") terms)
